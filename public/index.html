@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM — Paneli i Kompanisë</title>
+<style>
+  :root {
+    --primary: #ea580c;
+    --primary-dark: #c2410c;
+    --secondary: #64748b;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --bg: #fff7ed;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1c0a00;
+    --text-light: #64748b;
+    --sidebar-w: 240px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+  /* LOGIN */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #7c2d12 0%, #ea580c 100%);
+  }
+  .login-card {
+    background: white; border-radius: 16px; padding: 48px 40px; width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-card h1 { font-size: 28px; color: var(--primary); margin-bottom: 6px; }
+  .login-card p { color: var(--text-light); margin-bottom: 32px; font-size: 14px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; color: var(--text); transition: border-color .2s; background: white;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #15803d; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-full { width: 100%; }
+  .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: var(--danger); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; display: none; }
+
+  /* LAYOUT */
+  #app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: var(--sidebar-w); background: #431407; color: white; display: flex;
+    flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+  }
+  .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid #7c2d12; }
+  .sidebar-logo h2 { font-size: 20px; color: #fff7ed; }
+  .sidebar-logo span { font-size: 12px; color: #fed7aa; }
+  .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+    cursor: pointer; color: #fed7aa; font-size: 14px; font-weight: 500;
+    transition: all .15s; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: #7c2d12; color: #ffedd5; }
+  .nav-item.active { background: #9a3412; color: white; border-left-color: #fdba74; }
+  .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid #7c2d12; }
+  .user-info { font-size: 13px; color: #fed7aa; margin-bottom: 10px; }
+  .user-info strong { color: #ffedd5; display: block; }
+
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+  .topbar {
+    background: white; border-bottom: 1px solid var(--border); padding: 0 32px;
+    height: 64px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+  .content { padding: 28px 32px; flex: 1; }
+
+  /* CARDS */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 16px;
+  }
+  .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .stat-icon.blue { background: #ffedd5; }
+  .stat-icon.green { background: #dcfce7; }
+  .stat-icon.orange { background: #fff7ed; }
+  .stat-icon.purple { background: #f3e8ff; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+  .stat-label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+
+  /* TABLE */
+  .card { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
+  .card-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-header h3 { font-size: 15px; font-weight: 700; }
+  .card-body { padding: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f8fafc; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* BADGES */
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-blue { background: #ffedd5; color: #ea580c; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+  .badge-purple { background: #f3e8ff; color: #7c3aed; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal {
+    background: white; border-radius: 16px; width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,.3);
+  }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); padding: 4px; }
+  .close-btn:hover { color: var(--text); }
+
+  /* GRID 2 COL */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* CHARTS */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .chart-bar-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .chart-bar-item { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .chart-bar-label { width: 130px; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chart-bar-track { flex: 1; height: 10px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 5px; background: var(--primary); transition: width .5s; }
+  .chart-bar-val { width: 30px; text-align: right; font-weight: 600; color: var(--text); }
+
+  /* SEARCH */
+  .search-input { padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; width: 220px; }
+  .search-input:focus { outline: none; border-color: var(--primary); }
+
+  /* ATTENDANCE GRID */
+  .att-date { font-weight: 600; color: var(--primary); }
+  .empty-state { text-align: center; padding: 48px; color: var(--text-light); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+  .hidden { display: none !important; }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🏢 CRM</h1>
+    <p>Paneli i Menaxhimit të Kompanisë</p>
+    <div class="error-msg" id="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" value="admin@crm.com" placeholder="email@kompania.com">
+    </div>
+    <div class="form-group">
+      <label>Fjalëkalimi</label>
+      <input type="password" id="login-pass" value="admin123" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Hyr në sistem</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>🏢 CRM</h2>
+      <span>Paneli i Kompanisë</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('employees')" data-page="employees">
+        <span class="icon">👥</span> Punonjësit
+      </div>
+      <div class="nav-item" onclick="showPage('tasks')" data-page="tasks">
+        <span class="icon">✅</span> Detyrat
+      </div>
+      <div class="nav-item" onclick="showPage('attendance')" data-page="attendance">
+        <span class="icon">🕐</span> Prezenca
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <strong id="sidebar-username">—</strong>
+        Administrator
+      </div>
+      <button class="btn btn-secondary btn-sm btn-full" onclick="logout()">Dil</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div id="topbar-actions"></div>
+    </div>
+    <div class="content" id="page-content"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Modal</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('crm_token');
+let currentUser = JSON.parse(localStorage.getItem('crm_user') || 'null');
+
+// --- AUTH ---
+async function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const r = await api('/api/login', 'POST', { email, password: pass });
+    token = r.token;
+    currentUser = r.user;
+    localStorage.setItem('crm_token', token);
+    localStorage.setItem('crm_user', JSON.stringify(currentUser));
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('sidebar-username').textContent = currentUser.name;
+    showPage('dashboard');
+  } catch(e) {
+    errEl.textContent = e.message || 'Gabim gjatë hyrjes';
+    errEl.style.display = 'block';
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
+});
+function logout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('crm_token'); localStorage.removeItem('crm_user');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+if (token && currentUser) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('sidebar-username').textContent = currentUser.name;
+  showPage('dashboard');
+}
+
+// --- API ---
+async function api(url, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + url, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Gabim');
+  return data;
+}
+
+// --- PAGES ---
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  const titles = { dashboard: 'Dashboard', employees: 'Punonjësit', tasks: 'Detyrat', attendance: 'Prezenca & Orët' };
+  document.getElementById('page-title').textContent = titles[page] || page;
+  document.getElementById('topbar-actions').innerHTML = '';
+  if (page === 'dashboard') renderDashboard();
+  else if (page === 'employees') renderEmployees();
+  else if (page === 'tasks') renderTasks();
+  else if (page === 'attendance') renderAttendance();
+}
+
+// --- DASHBOARD ---
+async function renderDashboard() {
+  const c = document.getElementById('page-content');
+  c.innerHTML = '<p style="color:#94a3b8">Po ngarkon...</p>';
+  const d = await api('/api/dashboard');
+  c.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">👥</div>
+        <div><div class="stat-value">${d.total_employees}</div><div class="stat-label">Punonjës Aktivë</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">✅</div>
+        <div><div class="stat-value">${d.total_tasks}</div><div class="stat-label">Detyra Gjithsej</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">🟢</div>
+        <div><div class="stat-value">${d.tasks_done}</div><div class="stat-label">Detyra Përfunduara</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">🕐</div>
+        <div><div class="stat-value">${d.present_today}</div><div class="stat-label">Prezentë Sot</div></div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-header"><h3>Punonjës sipas Departamentit</h3></div>
+        <div class="card-body" style="padding:20px">
+          <div class="chart-bar-wrap" id="dept-chart"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Statusi i Detyrave</h3></div>
+        <div class="card-body" style="padding:20px">
+          <div class="chart-bar-wrap">
+            ${taskBar('Në Pritje', d.tasks_pending, d.total_tasks, '#f59e0b')}
+            ${taskBar('Në Progres', d.tasks_progress, d.total_tasks, '#3b82f6')}
+            ${taskBar('Përfunduar', d.tasks_done, d.total_tasks, '#22c55e')}
+          </div>
+          <div style="margin-top:16px;font-size:13px;color:#64748b">Mesatare orë/muaj: <strong>${d.avg_hours}h</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Detyrat e Fundit</h3></div>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>Titulli</th><th>Punonjësi</th><th>Prioriteti</th><th>Statusi</th></tr></thead>
+          <tbody>
+            ${d.recent_tasks.map(t => `<tr>
+              <td>${t.title}</td>
+              <td>${t.employee_name || '—'}</td>
+              <td>${priorityBadge(t.priority)}</td>
+              <td>${statusBadge(t.status)}</td>
+            </tr>`).join('') || '<tr><td colspan="4" class="empty-state">Nuk ka detyra</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  const maxD = Math.max(...d.by_dept.map(x => x.count), 1);
+  document.getElementById('dept-chart').innerHTML = d.by_dept.map(x => `
+    <div class="chart-bar-item">
+      <div class="chart-bar-label">${x.department}</div>
+      <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(x.count/maxD*100).toFixed(0)}%"></div></div>
+      <div class="chart-bar-val">${x.count}</div>
+    </div>`).join('') || '<div style="color:#94a3b8;font-size:13px">Nuk ka të dhëna</div>';
+}
+function taskBar(label, val, total, color) {
+  const pct = total > 0 ? (val/total*100).toFixed(0) : 0;
+  return `<div class="chart-bar-item">
+    <div class="chart-bar-label">${label}</div>
+    <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    <div class="chart-bar-val">${val}</div>
+  </div>`;
+}
+
+// --- EMPLOYEES ---
+let employees = [];
+async function renderEmployees() {
+  const c = document.getElementById('page-content');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openEmployeeModal()">+ Shto Punonjës</button>`;
+  employees = await api('/api/employees');
+  renderEmployeeTable(employees);
+}
+function renderEmployeeTable(list) {
+  const c = document.getElementById('page-content');
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3>Punonjësit (${list.length})</h3>
+        <input class="search-input" placeholder="Kërko..." oninput="filterEmployees(this.value)">
+      </div>
+      <div class="card-body">
+        ${list.length === 0 ? '<div class="empty-state"><div class="empty-icon">👥</div><p>Nuk ka punonjës. Shto të parën!</p></div>' : `
+        <table>
+          <thead><tr><th>Emri</th><th>Roli</th><th>Departamenti</th><th>Email</th><th>Tel</th><th>Statusi</th><th>Veprime</th></tr></thead>
+          <tbody>
+            ${list.map(e => `<tr>
+              <td><strong>${e.name}</strong></td>
+              <td>${e.role}</td>
+              <td>${e.department}</td>
+              <td>${e.email || '—'}</td>
+              <td>${e.phone || '—'}</td>
+              <td>${e.status === 'aktiv' ? '<span class="badge badge-green">Aktiv</span>' : '<span class="badge badge-gray">Joaktiv</span>'}</td>
+              <td>
+                <button class="btn btn-secondary btn-sm" onclick="openEmployeeModal(${e.id})">Ndrysho</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${e.id}, '${e.name}')">Fshi</button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    </div>`;
+}
+function filterEmployees(q) {
+  const filtered = employees.filter(e =>
+    e.name.toLowerCase().includes(q.toLowerCase()) ||
+    e.role.toLowerCase().includes(q.toLowerCase()) ||
+    e.department.toLowerCase().includes(q.toLowerCase())
+  );
+  renderEmployeeTable(filtered);
+}
+function openEmployeeModal(id) {
+  const e = id ? employees.find(x => x.id === id) : null;
+  showModal(e ? 'Ndrysho Punonjësin' : 'Shto Punonjës Të Ri', `
+    <div class="form-row">
+      <div class="form-group"><label>Emri *</label><input id="e-name" value="${e?.name||''}"></div>
+      <div class="form-group"><label>Roli *</label><input id="e-role" value="${e?.role||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Departamenti *</label>
+        <select id="e-dept">
+          ${['IT','HR','Financë','Marketing','Shitje','Operacione','Drejtim','Tjetër'].map(d => `<option${e?.department===d?' selected':''}>${d}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="e-email" value="${e?.email||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Telefon</label><input id="e-phone" value="${e?.phone||''}"></div>
+      <div class="form-group"><label>Statusi</label>
+        <select id="e-status">
+          <option value="aktiv"${e?.status==='aktiv'?' selected':''}>Aktiv</option>
+          <option value="joaktiv"${e?.status==='joaktiv'?' selected':''}>Joaktiv</option>
+        </select>
+      </div>
+    </div>
+  `, async () => {
+    const data = { name: v('e-name'), role: v('e-role'), department: v('e-dept'), email: v('e-email'), phone: v('e-phone'), status: v('e-status') };
+    if (!data.name || !data.role) return alert('Emri dhe Roli janë të detyrueshëm');
+    if (id) await api('/api/employees/'+id, 'PUT', data);
+    else await api('/api/employees', 'POST', data);
+    closeModal(); renderEmployees();
+  });
+}
+async function deleteEmployee(id, name) {
+  if (!confirm(`Fshi punonjësin "${name}"?`)) return;
+  await api('/api/employees/'+id, 'DELETE');
+  renderEmployees();
+}
+
+// --- TASKS ---
+let tasks = [];
+async function renderTasks() {
+  const c = document.getElementById('page-content');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openTaskModal()">+ Shto Detyrë</button>`;
+  [tasks, employees] = await Promise.all([api('/api/tasks'), api('/api/employees')]);
+  renderTaskTable(tasks);
+}
+function renderTaskTable(list) {
+  const c = document.getElementById('page-content');
+  c.innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      ${['të gjitha','në pritje','në progres','përfunduar'].map(s =>
+        `<button class="btn btn-secondary btn-sm" onclick="filterTasks('${s}')">${s.charAt(0).toUpperCase()+s.slice(1)}</button>`
+      ).join('')}
+      <input class="search-input" placeholder="Kërko detyrë..." oninput="searchTasks(this.value)" style="margin-left:auto">
+    </div>
+    <div class="card">
+      <div class="card-body">
+        ${list.length === 0 ? '<div class="empty-state"><div class="empty-icon">✅</div><p>Nuk ka detyra.</p></div>' : `
+        <table>
+          <thead><tr><th>Titulli</th><th>Punonjësi</th><th>Prioriteti</th><th>Statusi</th><th>Afati</th><th>Veprime</th></tr></thead>
+          <tbody>
+            ${list.map(t => `<tr>
+              <td><strong>${t.title}</strong>${t.description?`<br><small style="color:#94a3b8">${t.description}</small>`:''}</td>
+              <td>${t.employee_name || '—'}</td>
+              <td>${priorityBadge(t.priority)}</td>
+              <td>${statusBadge(t.status)}</td>
+              <td>${t.due_date || '—'}</td>
+              <td>
+                <button class="btn btn-secondary btn-sm" onclick="openTaskModal(${t.id})">Ndrysho</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteTask(${t.id})">Fshi</button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    </div>`;
+}
+let taskFilter = 'të gjitha', taskSearch = '';
+function filterTasks(s) { taskFilter = s; applyTaskFilters(); }
+function searchTasks(q) { taskSearch = q; applyTaskFilters(); }
+function applyTaskFilters() {
+  let list = tasks;
+  if (taskFilter !== 'të gjitha') list = list.filter(t => t.status === taskFilter);
+  if (taskSearch) list = list.filter(t => t.title.toLowerCase().includes(taskSearch.toLowerCase()));
+  renderTaskTable(list);
+}
+function openTaskModal(id) {
+  const t = id ? tasks.find(x => x.id === id) : null;
+  const empOpts = employees.map(e => `<option value="${e.id}"${t?.assigned_to===e.id?' selected':''}>${e.name}</option>`).join('');
+  showModal(t ? 'Ndrysho Detyrën' : 'Shto Detyrë Të Re', `
+    <div class="form-group"><label>Titulli *</label><input id="t-title" value="${t?.title||''}"></div>
+    <div class="form-group"><label>Përshkrimi</label><textarea id="t-desc" rows="2">${t?.description||''}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Cakto Punonjësit</label>
+        <select id="t-emp"><option value="">— Zgjidh —</option>${empOpts}</select>
+      </div>
+      <div class="form-group"><label>Prioriteti</label>
+        <select id="t-priority">
+          ${['e ulët','normale','e lartë','urgjente'].map(p => `<option${t?.priority===p?' selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Statusi</label>
+        <select id="t-status">
+          ${['në pritje','në progres','përfunduar'].map(s => `<option${t?.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>Afati</label><input type="date" id="t-due" value="${t?.due_date||''}"></div>
+    </div>
+  `, async () => {
+    const data = { title: v('t-title'), description: v('t-desc'), assigned_to: v('t-emp')||null, priority: v('t-priority'), status: v('t-status'), due_date: v('t-due') };
+    if (!data.title) return alert('Titulli është i detyrueshëm');
+    if (id) await api('/api/tasks/'+id, 'PUT', data);
+    else await api('/api/tasks', 'POST', data);
+    closeModal(); renderTasks();
+  });
+}
+async function deleteTask(id) {
+  if (!confirm('Fshi detyrën?')) return;
+  await api('/api/tasks/'+id, 'DELETE');
+  renderTasks();
+}
+
+// --- ATTENDANCE ---
+let attMonth = new Date().toISOString().slice(0,7);
+async function renderAttendance() {
+  employees = await api('/api/employees');
+  document.getElementById('topbar-actions').innerHTML = `<button class="btn btn-primary" onclick="openAttModal()">+ Regjistro Prezencë</button>`;
+  loadAttendance();
+}
+async function loadAttendance() {
+  const data = await api(`/api/attendance?month=${attMonth}`);
+  const c = document.getElementById('page-content');
+  // Calculate summary
+  const empMap = {};
+  data.forEach(a => {
+    if (!empMap[a.employee_name]) empMap[a.employee_name] = { days: 0, hours: 0 };
+    empMap[a.employee_name].days++;
+    empMap[a.employee_name].hours += a.hours_worked || 0;
+  });
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">◀</button>
+      <strong style="font-size:15px">${attMonth}</strong>
+      <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">▶</button>
+    </div>
+    <div class="chart-grid">
+      <div class="card">
+        <div class="card-header"><h3>Përmbledhje Mujore</h3></div>
+        <div class="card-body" style="padding:16px">
+          ${Object.keys(empMap).length === 0 ? '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:20px">Nuk ka të dhëna</p>' :
+          Object.entries(empMap).map(([name, s]) => `
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px">
+              <span>${name}</span>
+              <span><strong>${s.days}</strong> ditë · <strong>${s.hours.toFixed(1)}h</strong></span>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Regjistrimet (${data.length})</h3></div>
+        <div class="card-body">
+          ${data.length === 0 ? '<div class="empty-state"><div class="empty-icon">🕐</div><p>Nuk ka regjistrime</p></div>' : `
+          <table>
+            <thead><tr><th>Data</th><th>Punonjësi</th><th>Hyrja</th><th>Dalja</th><th>Orë</th><th></th></tr></thead>
+            <tbody>
+              ${data.map(a => `<tr>
+                <td class="att-date">${a.date}</td>
+                <td>${a.employee_name}</td>
+                <td>${a.check_in||'—'}</td>
+                <td>${a.check_out||'—'}</td>
+                <td>${a.hours_worked!=null?a.hours_worked.toFixed(1)+'h':'—'}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteAtt(${a.id})">✕</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>`}
+        </div>
+      </div>
+    </div>`;
+}
+function changeMonth(d) {
+  const [y,m] = attMonth.split('-').map(Number);
+  const dt = new Date(y, m-1+d, 1);
+  attMonth = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+  loadAttendance();
+}
+function openAttModal() {
+  const today = new Date().toISOString().split('T')[0];
+  const empOpts = employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+  showModal('Regjistro Prezencë', `
+    <div class="form-row">
+      <div class="form-group"><label>Punonjësi *</label>
+        <select id="a-emp"><option value="">— Zgjidh —</option>${empOpts}</select>
+      </div>
+      <div class="form-group"><label>Data *</label><input type="date" id="a-date" value="${today}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Ora e Hyrjes</label><input type="time" id="a-in" value="08:00"></div>
+      <div class="form-group"><label>Ora e Daljes</label><input type="time" id="a-out" value="17:00"></div>
+    </div>
+    <div class="form-group"><label>Shënime</label><input id="a-notes" placeholder="Opsionale..."></div>
+  `, async () => {
+    const data = { employee_id: v('a-emp'), date: v('a-date'), check_in: v('a-in'), check_out: v('a-out'), notes: v('a-notes') };
+    if (!data.employee_id || !data.date) return alert('Punonjësi dhe data janë të detyrueshme');
+    await api('/api/attendance', 'POST', data);
+    closeModal(); loadAttendance();
+  });
+}
+async function deleteAtt(id) {
+  if (!confirm('Fshi regjistrimin?')) return;
+  await api('/api/attendance/'+id, 'DELETE');
+  loadAttendance();
+}
+
+// --- HELPERS ---
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function priorityBadge(p) {
+  const map = { 'e ulët':'badge-gray','normale':'badge-blue','e lartë':'badge-orange','urgjente':'badge-red' };
+  return `<span class="badge ${map[p]||'badge-gray'}">${p||'normale'}</span>`;
+}
+function statusBadge(s) {
+  const map = { 'në pritje':'badge-orange','në progres':'badge-blue','përfunduar':'badge-green' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s||'—'}</span>`;
+}
+function showModal(title, body, onSave) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Anulo</button>
+    <button class="btn btn-primary" id="modal-save-btn">Ruaj</button>`;
+  document.getElementById('modal-save-btn').onclick = onSave;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+</script>
+</body>
+</html>
