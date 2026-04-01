@@ -287,6 +287,15 @@ tbody tr:hover td { background: var(--orange-50); }
 .chart-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--orange-600), var(--orange-400)); transition: width .6s cubic-bezier(.4,0,.2,1); }
 .chart-bar-val { width: 28px; text-align: right; font-weight: 700; color: var(--gray-700); font-size: 13px; }
 
+/* DONUT CHART */
+.donut-wrap { display: flex; align-items: center; gap: 24px; padding: 4px 0; flex-wrap: wrap; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.donut-legend-label { color: var(--gray-500); }
+.donut-legend-val { font-weight: 700; color: var(--gray-800); margin-left: 4px; }
+
 /* ===== EMPTY STATE ===== */
 .empty-state { text-align: center; padding: 56px 20px; color: var(--gray-400); }
 .empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; opacity: .6; }
@@ -551,11 +560,7 @@ async function renderDashboard() {
       </div>
       <div class="card">
         <div class="card-header"><h3>Statusi i Detyrave</h3></div>
-        <div style="padding:20px">
-          ${taskBar('Në Pritje', d.tasks_pending, d.total_tasks, 'var(--orange-500)')}
-          ${taskBar('Në Progres', d.tasks_progress, d.total_tasks, 'var(--blue-600)')}
-          ${taskBar('Përfunduar', d.tasks_done, d.total_tasks, 'var(--green-600)')}
-        </div>
+        <div style="padding:20px" id="tasks-donut"></div>
       </div>
     </div>
     <div class="card">
@@ -577,14 +582,14 @@ async function renderDashboard() {
         </table>
       </div>
     </div>`;
-  const maxD = Math.max(...d.by_dept.map(x => x.count), 1);
-  document.getElementById('dept-chart').innerHTML = d.by_dept.length
-    ? d.by_dept.map(x => `<div class="chart-bar-item">
-        <div class="chart-bar-label">${x.department}</div>
-        <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(x.count/maxD*100).toFixed(0)}%"></div></div>
-        <div class="chart-bar-val">${x.count}</div>
-      </div>`).join('')
-    : '<p style="color:var(--gray-400);font-size:13px">Nuk ka të dhëna</p>';
+  const deptColors = ['#ea580c','#f97316','#fb923c','#fdba74','#0ea5e9','#6366f1','#8b5cf6','#10b981'];
+  const deptSegs = d.by_dept.map((x, i) => ({ label: x.department, value: x.count, color: deptColors[i % deptColors.length] }));
+  document.getElementById('dept-chart').innerHTML = donutChart(deptSegs);
+  document.getElementById('tasks-donut').innerHTML = donutChart([
+    { label: 'Në Pritje', value: d.tasks_pending, color: '#f97316' },
+    { label: 'Në Progres', value: d.tasks_progress, color: '#3b82f6' },
+    { label: 'Përfunduar', value: d.tasks_done, color: '#22c55e' }
+  ]);
 }
 function taskBar(label, val, total, color) {
   const pct = total > 0 ? (val/total*100).toFixed(0) : 0;
@@ -592,6 +597,45 @@ function taskBar(label, val, total, color) {
     <div class="chart-bar-label">${label}</div>
     <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${pct}%;background:${color}"></div></div>
     <div class="chart-bar-val">${val}</div>
+  </div>`;
+}
+
+function donutChart(segments, size = 120, strokeW = 22) {
+  // segments: [{label, value, color}]
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  if (total === 0) return '<p style="color:var(--gray-400);font-size:13px">Nuk ka të dhëna</p>';
+  const r = (size - strokeW) / 2;
+  const cx = size / 2, cy = size / 2;
+  const circ = 2 * Math.PI * r;
+  let offset = -Math.PI / 2; // start from top
+  const paths = segments.map(seg => {
+    const pct = seg.value / total;
+    const arc = pct * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(offset);
+    const y1 = cy + r * Math.sin(offset);
+    offset += arc;
+    const x2 = cx + r * Math.cos(offset);
+    const y2 = cy + r * Math.sin(offset);
+    const large = arc > Math.PI ? 1 : 0;
+    return `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${seg.color}" opacity=".9"/>`;
+  });
+  // donut hole
+  const legend = segments.map(s => `
+    <div class="donut-legend-item">
+      <div class="donut-dot" style="background:${s.color}"></div>
+      <span class="donut-legend-label">${s.label}</span>
+      <span class="donut-legend-val">${s.value}</span>
+    </div>`).join('');
+  return `<div class="donut-wrap">
+    <svg class="donut-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      ${paths.join('')}
+      <circle cx="${cx}" cy="${cy}" r="${r - strokeW/2 + 2}" fill="white"/>
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle"
+        style="font-size:18px;font-weight:800;fill:var(--gray-900)">${total}</text>
+      <text x="${cx}" y="${cy + 16}" text-anchor="middle"
+        style="font-size:10px;fill:var(--gray-400)">total</text>
+    </svg>
+    <div class="donut-legend">${legend}</div>
   </div>`;
 }
 
