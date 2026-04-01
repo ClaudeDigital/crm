@@ -161,16 +161,16 @@ app.delete('/api/attendance/:id', auth, (req, res) => {
 
 // --- DASHBOARD ---
 app.get('/api/dashboard', auth, (req, res) => {
-  const total_employees = db.prepare('SELECT COUNT(*) as c FROM employees WHERE status="aktiv"').get().c;
+  const total_employees = db.prepare("SELECT COUNT(*) as c FROM employees WHERE status='aktiv'").get().c;
   const total_tasks = db.prepare('SELECT COUNT(*) as c FROM tasks').get().c;
-  const tasks_done = db.prepare('SELECT COUNT(*) as c FROM tasks WHERE status="përfunduar"').get().c;
-  const tasks_pending = db.prepare('SELECT COUNT(*) as c FROM tasks WHERE status="në pritje"').get().c;
-  const tasks_progress = db.prepare('SELECT COUNT(*) as c FROM tasks WHERE status="në progres"').get().c;
+  const tasks_done = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status='përfunduar'").get().c;
+  const tasks_pending = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status='në pritje'").get().c;
+  const tasks_progress = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE status='në progres'").get().c;
   const today = new Date().toISOString().split('T')[0];
   const present_today = db.prepare('SELECT COUNT(*) as c FROM attendance WHERE date=?').get(today).c;
   const month = today.slice(0, 7);
   const avg_hours = db.prepare('SELECT AVG(hours_worked) as a FROM attendance WHERE date LIKE ? AND hours_worked IS NOT NULL').get(month + '%').a;
-  const by_dept = db.prepare('SELECT department, COUNT(*) as count FROM employees WHERE status="aktiv" GROUP BY department').all();
+  const by_dept = db.prepare("SELECT department, COUNT(*) as count FROM employees WHERE status='aktiv' GROUP BY department").all();
   const recent_tasks = db.prepare(`SELECT t.title, t.status, t.priority, e.name as employee_name FROM tasks t LEFT JOIN employees e ON t.assigned_to=e.id ORDER BY t.created_at DESC LIMIT 5`).all();
   res.json({ total_employees, total_tasks, tasks_done, tasks_pending, tasks_progress, present_today, avg_hours: avg_hours ? avg_hours.toFixed(1) : 0, by_dept, recent_tasks });
 });
